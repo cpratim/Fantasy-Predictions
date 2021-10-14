@@ -4,8 +4,6 @@ from pprint import pprint
 import numpy as np
 import os
 
-from gplearn.genetic import SymbolicRegressor
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
 
 import torch
@@ -16,21 +14,24 @@ from tqdm import tqdm
 
 from modeling.fantasy.wrapper import ModelWrapper
 from modeling.fantasy.load import load_xy
+import pickle
 
+def correlation(x, y):
+    return np.corrcoef(x, y)[0, 1]
 
 class LinearNet(nn.Module):
 
-    def __init__(self, n_feat, n_out=1):
+    def __init__(self, n_feat, n_out= 1):
 
         super().__init__()
 
-        self.linear1 = nn.Linear(n_feat, 50)
-        self.linear2 = nn.Linear(50, n_out)
+        self.linear1 = nn.Linear(n_feat, 30)
+        self.out = nn.Linear(30, n_out)
 
     def forward(self, x):
 
         x = self.linear1(x)
-        x = self.linear2(x)
+        x = self.out(x)
         return x
 
 
@@ -40,7 +41,7 @@ def train(
     epochs=50000,
     batch_size=None,
     learning_rate=1e-5,
-    score_func=lambda x, y: np.corrcoef(x, y)[0, 1],
+    score_func=correlation,
     optimizer=optim.Adam,
     loss_func=nn.MSELoss(),
 ):
@@ -73,7 +74,8 @@ def load_fantasy_model(_log = True):
 
     model_dir = f'{fantasy_model_dir}/fantasy_point_model.pkl'
     if os.path.exists(model_dir):
-        return torch.load(model_dir)
+        with open(model_dir, 'rb') as f:
+            return pickle.load(f)
 
     if _log: print(f'Training Model | {model_dir}')
 
@@ -85,11 +87,14 @@ def load_fantasy_model(_log = True):
     model = ModelWrapper(net, train)
     
     model.train(X_train, y_train)
-    model.save(model_dir)
+    
+    with open(model_dir, 'wb') as f:
+        pickle.dump(model, f) 
 
     y_pred = model.predict(X_test)
     y_pred_train = model.predict(X_train)
-    y_train = model.detach(y_train)
-    
+
     if _log: print('Train Correlation: ', round(correlation(y_train, y_pred_train), 4))
     if _log: print('Test Correlation: ', round(correlation(y_test, y_pred), 4))
+
+    return model

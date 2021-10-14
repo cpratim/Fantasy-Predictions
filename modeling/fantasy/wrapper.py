@@ -23,7 +23,7 @@ class ModelWrapper(object):
 
     def train(self, X, y):
 
-        X = self.feature_pipeline.fit_transform(X)
+        #X = self.feature_pipeline.fit_transform(X)
         y = y.reshape(-1, 1)
         X = torch.Tensor(X)
         y = torch.Tensor(y)
@@ -36,7 +36,10 @@ class ModelWrapper(object):
         return y.detach().cpu().numpy().reshape(-1,)
 
     def predict(self, X):
-        y = model(X)
+        #X = self.feature_pipeline.fit_transform(X)
+        X = torch.Tensor(X)
+        X = X.to(self.device)
+        y = self.model(X)
         return self.detach(y)  
 
     def save(self, dir):

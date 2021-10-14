@@ -31,7 +31,6 @@ recorded_stats = [
     'PTS'
 ]
 
-
 def make_url(name):
     base = 'https://www.basketball-reference.com/search/search.fcgi?search=' + '+'.join(name.split(' '))
     raw = requests.get(base)
